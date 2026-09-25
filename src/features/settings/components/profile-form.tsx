@@ -69,10 +69,6 @@ export function ProfileForm({ profile }: ProfileFormProps) {
         </Select>
       </Field>
 
-      <div className="rounded-xl bg-muted/60 px-4 py-3 text-base">
-        Día de cobro: <span className="font-semibold">{profile.payday} de cada mes</span>
-      </div>
-
       <div className="flex justify-end border-t pt-5">
         <SubmitButton pending={pending}>Guardar ajustes</SubmitButton>
       </div>

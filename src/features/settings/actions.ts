@@ -57,3 +57,14 @@ export async function saveRuleSettings(_prev: ActionState, formData: FormData): 
   if (!parsed.success) return fromZodError(parsed.error);
   return updateProfile(parsed.data, "Reparto actualizado");
 }
+
+// 28 (no 31): así el día de cobro siempre existe, en febrero incluido.
+const paydaySchema = z.object({
+  payday: z.coerce.number({ error: "Elegí un día" }).int().min(1, { error: "Entre 1 y 28" }).max(28, { error: "Entre 1 y 28" }),
+});
+
+export async function savePayday(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  const parsed = paydaySchema.safeParse(formDataToObject(formData));
+  if (!parsed.success) return fromZodError(parsed.error);
+  return updateProfile(parsed.data, "Día de cobro actualizado");
+}

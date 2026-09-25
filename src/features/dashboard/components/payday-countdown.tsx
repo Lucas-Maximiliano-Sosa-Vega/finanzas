@@ -5,7 +5,8 @@ import { useMemo, useState } from "react";
 
 import { Meter } from "@/components/meter";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { PaydayEditDialog } from "@/features/settings/components/payday-edit-dialog";
 import { addMonths, daysInMonth, diffInDays, parseISODate, toISODate, weekdayMondayFirst, type ISODate } from "@/lib/finance/dates";
 import type { PayCycle } from "@/lib/finance/pay-cycle";
 import { formatLongDate, formatMonthYear } from "@/lib/format";
@@ -33,6 +34,9 @@ export function PaydayCountdown({ today, payday, cycle, className }: PaydayCount
           Próximo cobro
         </CardTitle>
         <CardDescription className="text-base first-letter:uppercase">{formatLongDate(cycle.nextPayday)}</CardDescription>
+        <CardAction>
+          <PaydayEditDialog payday={payday} />
+        </CardAction>
       </CardHeader>
 
       <CardContent className="space-y-6 px-6">

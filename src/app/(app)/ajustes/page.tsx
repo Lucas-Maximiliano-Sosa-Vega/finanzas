@@ -36,12 +36,13 @@ export default async function SettingsPage() {
         </div>
       </section>
 
-      <p className="flex flex-wrap items-center gap-1.5 text-base text-muted-foreground">
-        ¿Buscas el reparto 50/30/20? Está en el
+      <p className="text-base text-muted-foreground">
+        El reparto 50/30/20 y el día de cobro se cambian desde el{" "}
         <Link href="/#regla" className="inline-flex items-center gap-1 font-medium text-primary underline-offset-4 hover:underline">
           <PencilIcon className="size-4" aria-hidden />
           Resumen
         </Link>
+        , con el lápiz de cada tarjeta.
       </p>
     </div>
   );
