@@ -74,7 +74,7 @@ export function AppSidebar({ quickAdd, uiStyle }: { quickAdd: React.ReactNode; u
       </SidebarContent>
 
       <SidebarSeparator />
-      <SidebarFooter className="p-2 pb-4">
+      <SidebarFooter className="p-2 pb-[max(1rem,env(safe-area-inset-bottom))]">
         <SidebarMenu className="gap-1">
           <ExportItem />
           <AppearanceItem uiStyle={uiStyle} />

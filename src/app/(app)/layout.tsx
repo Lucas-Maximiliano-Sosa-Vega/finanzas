@@ -34,7 +34,7 @@ export default async function AppLayout({ children }: Readonly<{ children: React
       <AppSidebar quickAdd={quickAdd(false)} uiStyle={uiStyle} />
       <SidebarInset>
         {/* Barra superior solo en móvil: botón de menú bien visible */}
-        <header className="sticky top-0 z-30 flex h-16 items-center justify-between gap-3 border-b bg-background/90 px-4 backdrop-blur-md md:hidden">
+        <header className="sticky top-0 z-30 flex h-16 items-center justify-between gap-3 border-b bg-background/90 px-4 pt-[env(safe-area-inset-top)] backdrop-blur-md md:hidden">
           <MobileMenuButton>
             <MenuIcon />
             Menú

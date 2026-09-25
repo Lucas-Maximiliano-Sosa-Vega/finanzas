@@ -15,6 +15,9 @@ export const metadata: Metadata = {
   title: { default: "Finanzas", template: "%s · Finanzas" },
   description: "Panel personal de finanzas",
   robots: { index: false, follow: false },
+  // "Agregar a inicio" en iOS: usa apple-icon.png y este título; el manifest
+  // (para Android/Chrome) se detecta solo desde app/manifest.ts.
+  appleWebApp: { title: "Finanzas", statusBarStyle: "default" },
 };
 
 export const viewport: Viewport = {
@@ -22,6 +25,10 @@ export const viewport: Viewport = {
     { media: "(prefers-color-scheme: light)", color: "#ffffff" },
     { media: "(prefers-color-scheme: dark)", color: "#0a0a0a" },
   ],
+  width: "device-width",
+  initialScale: 1,
+  // Que el fondo llegue hasta los bordes en iPhones con notch/isla dinámica.
+  viewportFit: "cover",
 };
 
 export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {

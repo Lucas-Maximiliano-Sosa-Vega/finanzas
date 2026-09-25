@@ -75,6 +75,19 @@ src/
 
 El botón **+ Movimiento** de la cabecera está disponible en todas las páginas.
 
+## Instalarla como app (PWA)
+
+La app se puede instalar en el teléfono sin pasar por ninguna tienda: es el mismo sitio, con ícono y pantalla propia.
+
+- **iPhone (Safari):** abrir el sitio → botón compartir → **Agregar a inicio**.
+- **Android (Chrome):** abrir el sitio → menú ⋮ → **Instalar app** (o el banner que aparece solo).
+
+Archivos involucrados: `src/app/manifest.ts` (nombre, colores, íconos para Android/Chrome) y `src/app/icon.png` / `src/app/apple-icon.png` (favicon e ícono de iOS; Next los detecta por convención de archivo). Los íconos se generaron con `next/og` a partir de un cuadrado azul con "$"; para cambiar el diseño, regenerarlos con `ImageResponse` y reemplazar esos archivos.
+
+**Importante:** `/manifest.webmanifest` está excluido a propósito del `matcher` de `proxy.ts` — Chrome necesita poder leerlo sin sesión iniciada para decidir si ofrece instalar la app. Si en el futuro se agregan más rutas públicas (sin login), hay que excluirlas ahí también.
+
+No incluye service worker: no hay modo offline ni notificaciones push. Si más adelante hace falta, la guía oficial de Next.js (`docs/app/guides/progressive-web-apps.md` dentro de `node_modules/next`) explica cómo sumarlas.
+
 ## Scripts
 
 `npm run dev` · `npm run build` · `npm run lint` · `npm run typecheck`
