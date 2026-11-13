@@ -5,6 +5,7 @@ import { Suspense } from "react";
 import { AppSidebar } from "@/components/layout/app-sidebar";
 import { ClassicHeader } from "@/components/layout/classic-header";
 import { MobileMenuButton } from "@/components/layout/mobile-menu-button";
+import { PullToRefresh } from "@/components/layout/pull-to-refresh";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { QuickAdd, QuickAddFallback } from "@/features/transactions/components/quick-add";
 import { getUiStyle } from "@/lib/ui-style.server";
@@ -22,6 +23,7 @@ export default async function AppLayout({ children }: Readonly<{ children: React
   if (uiStyle === "classic") {
     return (
       <div className="flex min-h-svh flex-col">
+        <PullToRefresh />
         <ClassicHeader quickAdd={quickAdd(true)} uiStyle={uiStyle} />
         <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 sm:px-6 lg:py-12">{children}</main>
       </div>
@@ -31,6 +33,7 @@ export default async function AppLayout({ children }: Readonly<{ children: React
   // Estilo "Sencillo": menú lateral grande.
   return (
     <SidebarProvider>
+      <PullToRefresh />
       <AppSidebar quickAdd={quickAdd(false)} uiStyle={uiStyle} />
       <SidebarInset>
         {/* Barra superior solo en móvil: botón de menú bien visible */}
