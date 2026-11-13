@@ -88,6 +88,20 @@ Archivos involucrados: `src/app/manifest.ts` (nombre, colores, íconos para Andr
 
 No incluye service worker: no hay modo offline ni notificaciones push. Si más adelante hace falta, la guía oficial de Next.js (`docs/app/guides/progressive-web-apps.md` dentro de `node_modules/next`) explica cómo sumarlas.
 
+## Registrar facturas desde Claude (MCP)
+
+`/api/mcp` es un servidor MCP (Streamable HTTP, sin estado) con cuatro herramientas: `listar_cuentas`, `listar_categorias`, `listar_movimientos_recientes` y `crear_movimiento`. Permite mandarle a Claude la foto de una factura y que cree el movimiento.
+
+1. En Vercel → Settings → Environment Variables agregar (en Production, y volver a desplegar):
+   - `SUPABASE_SERVICE_ROLE_KEY`: Supabase → Project Settings → API → `service_role`. **Secreta: nunca en el código ni con prefijo `NEXT_PUBLIC_`.**
+   - `MCP_USER_ID`: UUID de tu usuario (Supabase → Authentication → Users).
+   - `MCP_SECRET`: clave larga y aleatoria (mín. 24 caracteres), p. ej. `openssl rand -hex 32`.
+2. En Claude → Configuración → Conectores → *Agregar conector personalizado*, URL:
+   `https://TU-APP.vercel.app/api/mcp?key=MCP_SECRET`
+3. Probar: mandar la foto de una factura y pedir "registrala".
+
+Notas de seguridad: el endpoint usa la clave de servicio (salta RLS), por eso filtra siempre por `MCP_USER_ID` y está excluido de `proxy.ts`. Quien tenga la URL con la clave puede crear movimientos: no compartirla, y rotar `MCP_SECRET` si se filtra. Es para un único usuario.
+
 ## Scripts
 
 `npm run dev` · `npm run build` · `npm run lint` · `npm run typecheck`

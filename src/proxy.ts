@@ -7,7 +7,8 @@ export function proxy(request: NextRequest) {
 }
 
 export const config = {
-  // Todo excepto assets estáticos, imágenes optimizadas y el manifest de la PWA
+  // Todo excepto /api/mcp (se autentica con su propia clave, sin sesión de usuario),
+  // assets estáticos, imágenes optimizadas y el manifest de la PWA
   // (Chrome debe poder leerlo sin sesión para ofrecer instalar la app).
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|manifest\\.webmanifest|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)"],
+  matcher: ["/((?!api/mcp|_next/static|_next/image|favicon.ico|manifest\\.webmanifest|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)"],
 };
