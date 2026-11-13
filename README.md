@@ -90,7 +90,21 @@ No incluye service worker: no hay modo offline ni notificaciones push. Si más a
 
 ## Registrar facturas desde Claude (MCP)
 
-`/api/mcp` es un servidor MCP (Streamable HTTP, sin estado) con cuatro herramientas: `listar_cuentas`, `listar_categorias`, `listar_movimientos_recientes` y `crear_movimiento`. Permite mandarle a Claude la foto de una factura y que cree el movimiento.
+`/api/mcp` es un servidor MCP (Streamable HTTP, sin estado). Permite mandarle a Claude la foto de una factura (o un gasto escrito) y que cree el movimiento, además de gestionar la app desde el chat.
+
+| Herramienta | Qué hace |
+|---|---|
+| `listar_cuentas`, `listar_categorias`, `listar_presupuestos`, `obtener_ajustes` | Lectura (las cuentas incluyen saldo actual) |
+| `listar_movimientos_recientes` | Últimos movimientos, con filtros por fecha, cuenta y categoría |
+| `resumen_ciclo` | Ingresos, 50/30/20 frente a su límite y gasto por categoría del ciclo de cobro |
+| `crear_movimiento` | Registra un gasto/ingreso (evita duplicados exactos) |
+| `actualizar_movimiento`, `eliminar_movimiento` | Corregir o borrar (el borrado es permanente) |
+| `guardar_cuenta` | Crear/editar/archivar cuentas |
+| `guardar_categoria` | Crear/editar categorías y subcategorías |
+| `guardar_presupuesto`, `eliminar_presupuesto` | Presupuestos globales o por categoría, recurrentes o del ciclo |
+| `actualizar_ajustes` | Moneda, zona horaria, día de cobro, reparto 50/30/20 y umbral de alerta |
+
+No hay herramientas para borrar cuentas ni categorías: se archivan o se borran desde la app.
 
 1. En Vercel → Settings → Environment Variables agregar (en Production, y volver a desplegar):
    - `SUPABASE_SERVICE_ROLE_KEY`: Supabase → Project Settings → API → `service_role`. **Secreta: nunca en el código ni con prefijo `NEXT_PUBLIC_`.**
