@@ -43,6 +43,7 @@ export type Database = {
           name: string;
           type: Database["public"]["Enums"]["account_type"];
           initial_balance: number;
+          credit_limit: number | null;
           is_archived: boolean;
           created_at: string;
         };
@@ -52,6 +53,7 @@ export type Database = {
           name: string;
           type: Database["public"]["Enums"]["account_type"];
           initial_balance?: number;
+          credit_limit?: number | null;
           is_archived?: boolean;
           created_at?: string;
         };

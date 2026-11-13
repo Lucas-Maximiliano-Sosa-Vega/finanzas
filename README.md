@@ -70,7 +70,7 @@ src/
 | `/movimientos` | Registrar, editar y eliminar ingresos/gastos, navegando por ciclos |
 | `/presupuestos` | Límites globales o por categoría, recurrentes o de un solo ciclo |
 | `/categorias` | Categorías y subcategorías por bloque 50/30/20, con tope opcional (% de ingresos) |
-| `/cuentas` | Efectivo, banco, tarjetas…: saldo actual, archivar, eliminar |
+| `/cuentas` | Efectivo, banco, tarjetas…: saldo actual, archivar, eliminar. Las tarjetas de crédito pueden tener un límite y muestran lo disponible (requiere `supabase/migrations/20260927000000_credit_limit.sql`) |
 | `/ajustes` | Moneda, zona horaria, porcentajes de la regla y umbral de alerta |
 
 El botón **+ Movimiento** de la cabecera está disponible en todas las páginas.

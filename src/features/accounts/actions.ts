@@ -18,6 +18,8 @@ const accountSchema = z.object({
     .number({ error: "Importe inválido" })
     .default(0)
     .transform((n) => Math.round(n * 100) / 100),
+  // Solo para tarjetas de crédito: cuánto se puede gastar en total.
+  credit_limit: z.coerce.number({ error: "Importe inválido" }).gt(0, { error: "Debe ser mayor que 0" }).optional(),
 });
 
 const MESSAGES = { unique: "Ya tienes una cuenta con ese nombre." };
@@ -27,7 +29,9 @@ export async function saveAccount(_prev: ActionState, formData: FormData): Promi
   const parsed = accountSchema.safeParse(formDataToObject(formData));
   if (!parsed.success) return fromZodError(parsed.error);
 
-  const { id, ...values } = parsed.data;
+  const { id, credit_limit, ...base } = parsed.data;
+  // La columna solo se envía para tarjetas de crédito (así nada se rompe si falta la migración).
+  const values = base.type === "credit_card" ? { ...base, credit_limit: credit_limit ?? null } : base;
   const supabase = await createClient();
   const { error } = id
     ? await supabase.from("accounts").update(values).eq("id", id)

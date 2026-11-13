@@ -1,12 +1,14 @@
 import { LandmarkIcon, PencilIcon, PlusIcon } from "lucide-react";
 import type { Metadata } from "next";
 
+import { Meter } from "@/components/meter";
 import { PageHeader } from "@/components/page-header";
 import { StatCard } from "@/components/stat-card";
 import { Button } from "@/components/ui/button";
 import { AccountFormDialog } from "@/features/accounts/components/account-form";
 import { ACCOUNT_TYPES } from "@/features/accounts/labels";
-import { getAccountBalances } from "@/features/accounts/queries";
+import { statusFill } from "@/features/dashboard/components/status-label";
+import { getAccountBalances, getCreditLimits } from "@/features/accounts/queries";
 import { getProfile } from "@/features/settings/queries";
 import { getCatalog, type Account } from "@/features/shared/queries";
 import { formatCurrency } from "@/lib/format";
@@ -15,7 +17,12 @@ import { cn } from "@/lib/utils";
 export const metadata: Metadata = { title: "Cuentas" };
 
 export default async function AccountsPage() {
-  const [{ accounts }, balances, { currency }] = await Promise.all([getCatalog(), getAccountBalances(), getProfile()]);
+  const [{ accounts }, balances, limits, { currency }] = await Promise.all([
+    getCatalog(),
+    getAccountBalances(),
+    getCreditLimits(),
+    getProfile(),
+  ]);
   const active = accounts.filter((a) => !a.is_archived);
   const archived = accounts.filter((a) => a.is_archived);
   const balanceOf = (a: Account) => balances?.get(a.id) ?? a.initial_balance;
@@ -53,7 +60,13 @@ export default async function AccountsPage() {
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         {active.map((account) => (
-          <AccountCard key={account.id} account={account} balance={balanceOf(account)} currency={currency} />
+          <AccountCard
+            key={account.id}
+            account={account}
+            balance={balanceOf(account)}
+            creditLimit={limits.get(account.id)}
+            currency={currency}
+          />
         ))}
       </div>
 
@@ -62,7 +75,13 @@ export default async function AccountsPage() {
           <h2 className="text-xl font-semibold text-muted-foreground">Archivadas</h2>
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
             {archived.map((account) => (
-              <AccountCard key={account.id} account={account} balance={balanceOf(account)} currency={currency} />
+              <AccountCard
+            key={account.id}
+            account={account}
+            balance={balanceOf(account)}
+            creditLimit={limits.get(account.id)}
+            currency={currency}
+          />
             ))}
           </div>
         </section>
@@ -71,8 +90,22 @@ export default async function AccountsPage() {
   );
 }
 
-function AccountCard({ account, balance, currency }: { account: Account; balance: number; currency: string }) {
+interface AccountCardProps {
+  account: Account;
+  balance: number;
+  creditLimit?: number;
+  currency: string;
+}
+
+function AccountCard({ account, balance, creditLimit, currency }: AccountCardProps) {
   const { label, icon: Icon } = ACCOUNT_TYPES[account.type];
+  const isCredit = account.type === "credit_card" && creditLimit !== undefined;
+
+  // Tarjeta con límite: el saldo es la deuda; lo importante es cuánto queda disponible.
+  const used = Math.max(-balance, 0);
+  const available = creditLimit === undefined ? 0 : creditLimit - used;
+  const usage = creditLimit ? used / creditLimit : 0;
+  const meterColor = statusFill(usage > 1 ? "exceeded" : usage >= 0.85 ? "warning" : "ok");
   const negative = balance < 0;
 
   return (
@@ -87,15 +120,38 @@ function AccountCard({ account, balance, currency }: { account: Account; balance
         </div>
       </header>
 
-      <div>
-        <p className="text-sm text-muted-foreground">{negative ? "Debes" : "Tienes"}</p>
-        <p className={cn("text-3xl font-semibold tracking-tight", negative ? "text-danger" : "text-foreground")}>
-          {formatCurrency(balance, currency)}
-        </p>
-      </div>
+      {isCredit ? (
+        <div className="space-y-3">
+          <div>
+            <p className="text-sm text-muted-foreground">Disponible</p>
+            <p className={cn("text-3xl font-semibold tracking-tight", available < 0 ? "text-danger" : "text-foreground")}>
+              {formatCurrency(available, currency)}
+            </p>
+          </div>
+          <Meter value={usage} color={meterColor} label={`Uso del límite de ${account.name}`} />
+          <dl className="flex justify-between gap-4 text-sm">
+            <div>
+              <dt className="text-muted-foreground">Usado</dt>
+              <dd className="font-medium tabular-nums">{formatCurrency(used, currency)}</dd>
+            </div>
+            <div className="text-right">
+              <dt className="text-muted-foreground">Límite</dt>
+              <dd className="font-medium tabular-nums">{formatCurrency(creditLimit ?? 0, currency)}</dd>
+            </div>
+          </dl>
+        </div>
+      ) : (
+        <div>
+          <p className="text-sm text-muted-foreground">{negative ? "Debes" : "Tienes"}</p>
+          <p className={cn("text-3xl font-semibold tracking-tight", negative ? "text-danger" : "text-foreground")}>
+            {formatCurrency(balance, currency)}
+          </p>
+        </div>
+      )}
 
       <AccountFormDialog
         account={account}
+        creditLimit={creditLimit}
         trigger={
           <Button variant="outline" className="mt-auto h-11 w-full text-base">
             <PencilIcon />

@@ -110,32 +110,56 @@ const allTools = [
   /* --- Lectura ------------------------------------------------------------ */
   tool({
     name: "listar_cuentas",
-    description: "Lista las cuentas con su tipo, saldo inicial, saldo actual y si están archivadas.",
+    description:
+      "Lista las cuentas con su tipo, saldo inicial, saldo actual y si están archivadas. " +
+      "Las tarjetas de crédito con límite incluyen credit_limit y available (lo que queda por gastar).",
     schema: z.object({ incluir_archivadas: z.boolean().optional() }),
     hints: { readOnlyHint: true },
     async run({ incluir_archivadas }, ctx) {
-      let query = ctx.db
-        .from("accounts")
-        .select("id, name, type, initial_balance, is_archived")
-        .eq("user_id", ctx.userId)
-        .order("name");
-      if (!incluir_archivadas) query = query.eq("is_archived", false);
-      const { data: accounts, error } = await query;
-      if (error) return fail("No se pudieron leer las cuentas.");
+      const read = async (withLimit: boolean) => {
+        let query = ctx.db
+          .from("accounts")
+          .select(
+            withLimit
+              ? "id, name, type, initial_balance, is_archived, credit_limit"
+              : "id, name, type, initial_balance, is_archived",
+          )
+          .eq("user_id", ctx.userId)
+          .order("name");
+        if (!incluir_archivadas) query = query.eq("is_archived", false);
+        return query;
+      };
+      // Si aún no se aplicó la migración de límites, lee sin esa columna.
+      let result = await read(true);
+      if (result.error) result = await read(false);
+      if (result.error) return fail("No se pudieron leer las cuentas.");
+      const accounts = result.data as unknown as {
+        id: string;
+        name: string;
+        type: string;
+        initial_balance: number;
+        is_archived: boolean;
+        credit_limit?: number | null;
+      }[];
 
       const delta = new Map<string, number>();
       for (const t of await fetchAllTransactions(ctx)) {
         delta.set(t.account_id, (delta.get(t.account_id) ?? 0) + (t.kind === "income" ? t.amount : -t.amount));
       }
       return ok(
-        accounts.map((a) => ({
-          id: a.id,
-          name: a.name,
-          type: a.type,
-          archived: a.is_archived,
-          initial_balance: a.initial_balance,
-          balance: round2(a.initial_balance + (delta.get(a.id) ?? 0)),
-        })),
+        accounts.map((a) => {
+          const balance = round2(a.initial_balance + (delta.get(a.id) ?? 0));
+          return {
+            id: a.id,
+            name: a.name,
+            type: a.type,
+            archived: a.is_archived,
+            initial_balance: a.initial_balance,
+            balance,
+            // Tarjetas con límite: el saldo es la deuda (negativo); disponible = límite + saldo.
+            ...(a.credit_limit != null && { credit_limit: a.credit_limit, available: round2(a.credit_limit + balance) }),
+          };
+        }),
       );
     },
   }),
@@ -350,14 +374,16 @@ const allTools = [
       name: z.string().trim().min(1).max(60).optional(),
       type: z.enum(ACCOUNT_TYPE_VALUES).optional(),
       initial_balance: z.number().optional(),
+      credit_limit: z.number().positive().nullable().optional().describe("Límite de una tarjeta de crédito; null lo quita"),
       archivada: z.boolean().optional(),
     }),
     hints: { idempotentHint: true },
-    async run({ id, name, type, initial_balance, archivada }, { db, userId }) {
+    async run({ id, name, type, initial_balance, credit_limit, archivada }, { db, userId }) {
       const values = {
         ...(name !== undefined && { name }),
         ...(type !== undefined && { type }),
         ...(initial_balance !== undefined && { initial_balance: round2(initial_balance) }),
+        ...(credit_limit !== undefined && { credit_limit: credit_limit === null ? null : round2(credit_limit) }),
         ...(archivada !== undefined && { is_archived: archivada }),
       };
 
@@ -368,7 +394,7 @@ const allTools = [
           .insert({ ...values, name, type, user_id: userId })
           .select("id, name, type, initial_balance")
           .single();
-        return error ? dbFail(error, "No se pudo crear la cuenta.") : ok({ creada: data });
+        return error ? dbFail(error, "No se pudo crear la cuenta (¿aplicaste la migración de límites?).") : ok({ creada: data });
       }
 
       if (Object.keys(values).length === 0) return fail("No indicaste ningún campo para cambiar.");

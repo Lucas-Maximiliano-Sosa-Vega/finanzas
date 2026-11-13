@@ -16,7 +16,15 @@ import { deleteAccount, saveAccount } from "../actions";
 import { ACCOUNT_TYPES, ACCOUNT_TYPE_VALUES } from "../labels";
 import { ArchiveButton } from "./archive-button";
 
-export function AccountFormDialog({ account, trigger }: { account?: Account; trigger: React.ReactNode }) {
+export function AccountFormDialog({
+  account,
+  creditLimit,
+  trigger,
+}: {
+  account?: Account;
+  creditLimit?: number;
+  trigger: React.ReactNode;
+}) {
   const [open, setOpen] = useState(false);
 
   return (
@@ -27,14 +35,15 @@ export function AccountFormDialog({ account, trigger }: { account?: Account; tri
       title={account ? `Editar «${account.name}»` : "Nueva cuenta"}
       description={account ? undefined : "Dónde tienes tu dinero: efectivo, banco, tarjetas…"}
     >
-      {open && <AccountForm account={account} onDone={() => setOpen(false)} />}
+      {open && <AccountForm account={account} creditLimit={creditLimit} onDone={() => setOpen(false)} />}
     </FormDialog>
   );
 }
 
-function AccountForm({ account, onDone }: { account?: Account; onDone: () => void }) {
+function AccountForm({ account, creditLimit, onDone }: { account?: Account; creditLimit?: number; onDone: () => void }) {
   const { onSubmit, pending, errors } = useFormAction(saveAccount, onDone);
   const id = useId();
+  const [type, setType] = useState<string>(account?.type ?? "checking");
 
   return (
     <form onSubmit={onSubmit} className="space-y-5">
@@ -55,7 +64,7 @@ function AccountForm({ account, onDone }: { account?: Account; onDone: () => voi
       </Field>
 
       <Field label="Tipo de cuenta" htmlFor={`${id}-type`} errors={errors.type}>
-        <Select name="type" defaultValue={account?.type ?? "checking"} required>
+        <Select name="type" value={type} onValueChange={setType} required>
           <SelectTrigger id={`${id}-type`} className={cn("w-full", FIELD_CONTROL)}>
             <SelectValue />
           </SelectTrigger>
@@ -72,6 +81,27 @@ function AccountForm({ account, onDone }: { account?: Account; onDone: () => voi
           </SelectContent>
         </Select>
       </Field>
+
+      {type === "credit_card" && (
+        <Field
+          label="Límite de la tarjeta"
+          htmlFor={`${id}-limit`}
+          errors={errors.credit_limit}
+          hint="Opcional. Con el límite, la tarjeta muestra cuánto te queda disponible."
+        >
+          <Input
+            id={`${id}-limit`}
+            name="credit_limit"
+            type="number"
+            inputMode="decimal"
+            step="0.01"
+            min="0"
+            defaultValue={creditLimit}
+            placeholder="Ej: 3400000"
+            className={cn(FIELD_CONTROL, "tabular-nums")}
+          />
+        </Field>
+      )}
 
       <Field
         label="¿Cuánto había al empezar?"

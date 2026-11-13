@@ -15,3 +15,19 @@ export async function getAccountBalances(): Promise<Map<string, number> | null> 
   }
   return new Map(data.map((row) => [row.account_id, Number(row.balance)]));
 }
+
+/**
+ * Límite de crédito por cuenta (solo tarjetas de crédito que lo tengan).
+ * Devuelve un mapa vacío si aún no se aplicó la migración de límites.
+ */
+export async function getCreditLimits(): Promise<Map<string, number>> {
+  await requireUser();
+  const supabase = await createClient();
+  const { data, error } = await supabase.from("accounts").select("id, credit_limit").not("credit_limit", "is", null);
+
+  if (error) {
+    console.error("credit_limit:", error.message);
+    return new Map();
+  }
+  return new Map(data.map((row) => [row.id, Number(row.credit_limit)]));
+}
