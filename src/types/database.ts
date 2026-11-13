@@ -136,6 +136,30 @@ export type Database = {
           },
         ];
       };
+      transfers: {
+        Row: {
+          id: string;
+          user_id: string;
+          from_account_id: string;
+          to_account_id: string;
+          amount: number;
+          occurred_on: string;
+          description: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id?: string;
+          from_account_id: string;
+          to_account_id: string;
+          amount: number;
+          occurred_on?: string;
+          description?: string | null;
+          created_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["transfers"]["Insert"]>;
+        Relationships: [];
+      };
       budgets: {
         Row: {
           id: string;

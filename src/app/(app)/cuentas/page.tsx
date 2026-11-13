@@ -1,4 +1,4 @@
-import { LandmarkIcon, PencilIcon, PlusIcon } from "lucide-react";
+import { ArrowLeftRightIcon, ArrowRightIcon, LandmarkIcon, PencilIcon, PlusIcon } from "lucide-react";
 import type { Metadata } from "next";
 
 import { Meter } from "@/components/meter";
@@ -11,18 +11,25 @@ import { statusFill } from "@/features/dashboard/components/status-label";
 import { getAccountBalances, getCreditLimits } from "@/features/accounts/queries";
 import { getProfile } from "@/features/settings/queries";
 import { getCatalog, type Account } from "@/features/shared/queries";
-import { formatCurrency } from "@/lib/format";
+import { DeleteTransferButton } from "@/features/transfers/components/delete-transfer-button";
+import { TransferFormDialog } from "@/features/transfers/components/transfer-form";
+import { getRecentTransfers } from "@/features/transfers/queries";
+import { todayIn } from "@/lib/finance/dates";
+import { formatCurrency, formatLongDate } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
 export const metadata: Metadata = { title: "Cuentas" };
 
 export default async function AccountsPage() {
-  const [{ accounts }, balances, limits, { currency }] = await Promise.all([
+  const [{ accounts }, balances, limits, transfers, { currency, timezone }] = await Promise.all([
     getCatalog(),
     getAccountBalances(),
     getCreditLimits(),
+    getRecentTransfers(),
     getProfile(),
   ]);
+  const today = todayIn(timezone);
+  const accountName = new Map(accounts.map((a) => [a.id, a.name]));
   const active = accounts.filter((a) => !a.is_archived);
   const archived = accounts.filter((a) => a.is_archived);
   const balanceOf = (a: Account) => balances?.get(a.id) ?? a.initial_balance;
@@ -31,14 +38,26 @@ export default async function AccountsPage() {
   return (
     <div className="space-y-10">
       <PageHeader title="Cuentas" description="Dónde está tu dinero: efectivo, banco, tarjetas…">
-        <AccountFormDialog
-          trigger={
-            <Button size="lg" className="h-12 px-5 text-base">
-              <PlusIcon className="size-5" />
-              Nueva cuenta
-            </Button>
-          }
-        />
+        <div className="flex flex-wrap gap-3">
+          <TransferFormDialog
+            accounts={accounts}
+            today={today}
+            trigger={
+              <Button size="lg" variant="outline" className="h-12 px-5 text-base">
+                <ArrowLeftRightIcon className="size-5" />
+                Transferir
+              </Button>
+            }
+          />
+          <AccountFormDialog
+            trigger={
+              <Button size="lg" className="h-12 px-5 text-base">
+                <PlusIcon className="size-5" />
+                Nueva cuenta
+              </Button>
+            }
+          />
+        </div>
       </PageHeader>
 
       <StatCard
@@ -69,6 +88,36 @@ export default async function AccountsPage() {
           />
         ))}
       </div>
+
+      {transfers.length > 0 && (
+        <section className="space-y-4">
+          <h2 className="text-xl font-semibold">Últimas transferencias</h2>
+          <ul className="divide-y overflow-hidden rounded-2xl border bg-card">
+            {transfers.map((t) => (
+              <li key={t.id} className="flex items-center gap-4 px-4 py-4 sm:px-5">
+                <span className="flex size-11 shrink-0 items-center justify-center rounded-full bg-info-soft text-primary">
+                  <ArrowLeftRightIcon className="size-5" aria-hidden />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="flex flex-wrap items-center gap-x-2 text-base font-medium">
+                    <span className="truncate">{accountName.get(t.from_account_id) ?? "—"}</span>
+                    <ArrowRightIcon className="size-4 shrink-0 text-muted-foreground" aria-label="a" />
+                    <span className="truncate">{accountName.get(t.to_account_id) ?? "—"}</span>
+                  </p>
+                  <p className="truncate text-sm text-muted-foreground first-letter:uppercase">
+                    {t.occurred_on === today ? "Hoy" : formatLongDate(t.occurred_on)}
+                    {t.description ? ` · ${t.description}` : ""}
+                  </p>
+                </div>
+                <span className="shrink-0 text-base font-semibold tabular-nums sm:text-lg">
+                  {formatCurrency(t.amount, currency)}
+                </span>
+                <DeleteTransferButton id={t.id} />
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       {archived.length > 0 && (
         <section className="space-y-4">

@@ -146,6 +146,15 @@ const allTools = [
       for (const t of await fetchAllTransactions(ctx)) {
         delta.set(t.account_id, (delta.get(t.account_id) ?? 0) + (t.kind === "income" ? t.amount : -t.amount));
       }
+      // Las transferencias mueven saldo entre cuentas (si aún no existe la tabla, se ignoran).
+      const { data: transfers } = await ctx.db
+        .from("transfers")
+        .select("from_account_id, to_account_id, amount")
+        .eq("user_id", ctx.userId);
+      for (const t of transfers ?? []) {
+        delta.set(t.from_account_id, (delta.get(t.from_account_id) ?? 0) - Number(t.amount));
+        delta.set(t.to_account_id, (delta.get(t.to_account_id) ?? 0) + Number(t.amount));
+      }
       return ok(
         accounts.map((a) => {
           const balance = round2(a.initial_balance + (delta.get(a.id) ?? 0));
@@ -360,6 +369,66 @@ const allTools = [
         .select("id, amount, occurred_on, description");
       if (error) return dbFail(error, "No se pudo eliminar el movimiento.");
       return data.length === 0 ? fail("No existe ese movimiento.") : ok({ eliminado: data[0] });
+    },
+  }),
+
+  /* --- Transferencias ----------------------------------------------------- */
+  tool({
+    name: "crear_transferencia",
+    description:
+      "Mueve dinero de una cuenta a otra (p. ej. pagar la tarjeta de crédito desde la cuenta bancaria). " +
+      "NO cuenta como gasto ni ingreso, así que no afecta el 50/30/20. Usa esto para pagos de tarjeta, " +
+      "retiros de efectivo y traspasos; no crear_movimiento.",
+    schema: z.object({
+      from_account_id: uuid.describe("Cuenta de origen (UUID de listar_cuentas)"),
+      to_account_id: uuid.describe("Cuenta de destino"),
+      amount: amount.describe("Importe positivo"),
+      occurred_on: isoDate.describe("Fecha AAAA-MM-DD"),
+      description: z.string().trim().max(200).optional(),
+    }),
+    hints: {},
+    async run({ description, ...values }, { db, userId }) {
+      if (values.from_account_id === values.to_account_id) return fail("El origen y el destino deben ser distintos.");
+      const { data, error } = await db
+        .from("transfers")
+        .insert({ ...values, amount: round2(values.amount), description: description ?? null, user_id: userId })
+        .select("id, from_account_id, to_account_id, amount, occurred_on, description")
+        .single();
+      if (error) {
+        return error.code === "42P01" || error.code === "PGRST205"
+          ? fail("Falta aplicar la migración de transferencias en Supabase.")
+          : dbFail(error, "No se pudo guardar la transferencia.");
+      }
+      return ok({ creada: data });
+    },
+  }),
+
+  tool({
+    name: "listar_transferencias",
+    description: "Últimas transferencias entre cuentas (con id, para poder eliminarlas).",
+    schema: z.object({ limit: z.number().int().min(1).max(50).optional().describe("Por defecto 10") }),
+    hints: { readOnlyHint: true },
+    async run({ limit }, { db, userId }) {
+      const { data, error } = await db
+        .from("transfers")
+        .select("id, from_account_id, to_account_id, amount, occurred_on, description")
+        .eq("user_id", userId)
+        .order("occurred_on", { ascending: false })
+        .order("created_at", { ascending: false })
+        .limit(limit ?? 10);
+      return error ? fail("No se pudieron leer las transferencias.") : ok(data);
+    },
+  }),
+
+  tool({
+    name: "eliminar_transferencia",
+    description: "Elimina una transferencia de forma permanente (los saldos vuelven a como estaban). Confirma antes.",
+    schema: z.object({ id: uuid }),
+    hints: { destructiveHint: true, idempotentHint: true },
+    async run({ id }, { db, userId }) {
+      const { data, error } = await db.from("transfers").delete().eq("id", id).eq("user_id", userId).select("id");
+      if (error) return dbFail(error, "No se pudo eliminar la transferencia.");
+      return data.length === 0 ? fail("No existe esa transferencia.") : ok({ eliminada: id });
     },
   }),
 

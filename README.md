@@ -70,7 +70,7 @@ src/
 | `/movimientos` | Registrar, editar y eliminar ingresos/gastos, navegando por ciclos |
 | `/presupuestos` | Límites globales o por categoría, recurrentes o de un solo ciclo |
 | `/categorias` | Categorías y subcategorías por bloque 50/30/20, con tope opcional (% de ingresos) |
-| `/cuentas` | Efectivo, banco, tarjetas…: saldo actual, archivar, eliminar. Las tarjetas de crédito pueden tener un límite y muestran lo disponible (requiere `supabase/migrations/20260927000000_credit_limit.sql`) |
+| `/cuentas` | **Transferir** entre cuentas (no cuenta como gasto/ingreso), y efectivo, banco, tarjetas…: saldo actual, archivar, eliminar. Las tarjetas de crédito pueden tener un límite y muestran lo disponible (requiere `supabase/migrations/20260927000000_credit_limit.sql`) |
 | `/ajustes` | Moneda, zona horaria, porcentajes de la regla y umbral de alerta |
 
 El botón **+ Movimiento** de la cabecera está disponible en todas las páginas.
@@ -99,6 +99,7 @@ No incluye service worker: no hay modo offline ni notificaciones push. Si más a
 | `resumen_ciclo` | Ingresos, 50/30/20 frente a su límite y gasto por categoría del ciclo de cobro |
 | `crear_movimiento` | Registra un gasto/ingreso (evita duplicados exactos) |
 | `actualizar_movimiento`, `eliminar_movimiento` | Corregir o borrar (el borrado es permanente) |
+| `crear_transferencia`, `listar_transferencias`, `eliminar_transferencia` | Mover dinero entre cuentas (pago de tarjeta, retiro de efectivo…) sin contar como gasto ni ingreso. Requiere `supabase/migrations/20260927000001_transfers.sql` |
 | `guardar_cuenta` | Crear/editar/archivar cuentas |
 | `guardar_categoria` | Crear/editar categorías y subcategorías |
 | `guardar_presupuesto`, `eliminar_presupuesto` | Presupuestos globales o por categoría, recurrentes o del ciclo |
