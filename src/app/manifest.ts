@@ -13,7 +13,7 @@ export default function manifest(): MetadataRoute.Manifest {
     description: "Panel personal de finanzas: presupuestos, regla 50/30/20 y control de gastos.",
     start_url: "/",
     display: "standalone",
-    background_color: "#ffffff",
+    background_color: "#0e1730",
     theme_color: "#2a78d6",
     orientation: "portrait-primary",
     icons: [
